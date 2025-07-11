@@ -1,9 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">DenetTestKropotov</string>
-    <string name="screen_node_title" translatable="false">Node Screen</string>
-    <string name="screen_editor_title" translatable="false">Editor Screen</string>
-    <string name="content_description_topbar_right_btn">Right button</string>
-    <string name="content_description_toolbar_back_button">Back button</string>
+    <string name="content_description_topbar_right_btn">Правая кнопка</string>
+    <string name="content_description_toolbar_back_button">Кнопка назад</string>
     <string name="button_next">Next</string>
     <string name="button_next_multiple">Next (%s)</string>
     <string name="button_back">Back</string>

@@ -46,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // init and populate database with random data
         private fun buildDatabase(context: Context): AppDatabase {
             return Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
                 .addCallback(

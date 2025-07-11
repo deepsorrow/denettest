@@ -1,9 +1,9 @@
 package ru.kropotov.denet.test.di
 
 import android.content.Context
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
-import dagger.Binds
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
@@ -32,6 +32,7 @@ class DatabaseModule {
         return appDatabase.nodeDao()
     }
 
+    @Suppress("unused")
     @InstallIn(SingletonComponent::class)
     @Module
     interface DatabaseBinds {

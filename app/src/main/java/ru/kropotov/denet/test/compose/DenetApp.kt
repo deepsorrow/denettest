@@ -1,13 +1,20 @@
 package ru.kropotov.denet.test.compose
 
+import EditorScreen
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import ru.kropotov.denet.test.compose.editor.EditorScreen
 import ru.kropotov.denet.test.compose.launch.LaunchScreen
 import ru.kropotov.denet.test.compose.node.NodeScreen
 
@@ -21,32 +28,44 @@ fun DenetApp() {
 fun DenetNavHost(
     navController: NavHostController
 ) {
-    NavHost(navController = navController, startDestination = Screen.Launch.route) {
-        composable(route = Screen.Launch.route) {
-            LaunchScreen(
-                navigateTo = {
-                    navController.navigateToNode(it) { popUpTo(0) }
-                }
+    var toolbarState by remember { mutableStateOf<ToolbarState?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopBar(
+                navController = navController,
+                state = toolbarState
             )
         }
+    ) { innerPadding ->
+        NavHost(navController = navController, startDestination = Screen.Launch.route) {
+            composable(route = Screen.Launch.route) {
+                LaunchScreen(
+                    navigateTo = {
+                        navController.navigateToNode(it) { popUpTo(0) }
+                    }
+                )
+            }
 
-        composable(
-            route = Screen.Node.route,
-            arguments = Screen.Node.navArguments
-        ) {
-            NodeScreen(
-                navigateTo = { navController.navigateToNode(it) }
-            )
-        }
+            composable(
+                route = Screen.Node.route,
+                arguments = Screen.Node.navArguments
+            ) {
+                toolbarState = ToolbarState.NodeScreenState
+                NodeScreen(
+                    modifier = Modifier.padding(paddingValues = innerPadding),
+                    toNavigate = {
+                        navController.navigateToNode(it)
+                    }
+                )
+            }
 
-        composable(route = Screen.Editor.route) {
-            EditorScreen(
-                onBackClick = {
-                    navController.navigate(
-                        route = Screen.Node.createRoute(it.address)
-                    )
-                }
-            )
+            composable(route = Screen.Editor.route) {
+                toolbarState = ToolbarState.EditorScreenState
+                EditorScreen(
+                    modifier = Modifier.padding(paddingValues = innerPadding)
+                )
+            }
         }
     }
 }

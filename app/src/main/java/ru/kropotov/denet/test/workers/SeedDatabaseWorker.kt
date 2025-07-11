@@ -51,7 +51,11 @@ class SeedDatabaseWorker(
             val childAddresses = mutableListOf<String>()
 
             repeat(childCount) { i ->
-                val childAddress = generateSubtree(currentDepth + 1, address, i)
+                val childAddress = generateSubtree(
+                    currentDepth = currentDepth + 1,
+                    parentAddress = address,
+                    indexInParent = i
+                )
                 childAddresses.add(childAddress)
             }
 
@@ -59,7 +63,11 @@ class SeedDatabaseWorker(
             return address
         }
 
-        generateSubtree(currentDepth = 0, parentAddress = null, indexInParent = 0)
+        generateSubtree(
+            currentDepth = 0,
+            parentAddress = null,
+            indexInParent = 0
+        )
 
         return allNodes
     }

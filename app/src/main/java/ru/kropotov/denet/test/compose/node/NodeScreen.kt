@@ -1,203 +1,272 @@
 package ru.kropotov.denet.test.compose.node
 
-import androidx.compose.foundation.Image
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.kropotov.denet.test.R
 import ru.kropotov.denet.test.data.node.Node
 import ru.kropotov.denet.test.ui.theme.LocalCustomColors
+import ru.kropotov.denet.test.ui.theme.buttonLarge
+import ru.kropotov.denet.test.ui.theme.buttonShape
+import ru.kropotov.denet.test.ui.theme.titleMedium
+import ru.kropotov.denet.test.ui.theme.titleSmall
 import ru.kropotov.denet.test.viewmodel.NodeViewModel
 
 @Composable
 fun NodeScreen(
+    modifier: Modifier = Modifier,
     viewModel: NodeViewModel = hiltViewModel(),
-    navigateTo: (String) -> Unit = {},
+    toNavigate: (String) -> Unit = {}
 ) {
-    val node = viewModel.node.collectAsStateWithLifecycle().value ?: return
-    NodeScreen(
-        node = node,
-        navigateTo = navigateTo
-    )
+    val node by viewModel.node.collectAsStateWithLifecycle()
+    node?.let {
+        NodeContent(
+            modifier = modifier,
+            node = it,
+            onNavigationClicked = toNavigate
+        )
+    }
 }
 
 @Composable
-fun NodeScreen(
+fun NodeContent(
+    modifier: Modifier = Modifier,
     node: Node,
-    navigateTo: (String) -> Unit
+    onNavigationClicked: (String) -> Unit
 ) {
-    ConstraintLayout(
-        modifier = Modifier
-            .background(color = MaterialTheme.colorScheme.background)
-            .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 56.dp)
-            .fillMaxSize()
-    ) {
-        val (textTitle, btnSettings, textNodeType, textNodeAddress, abstractShape, buttons) = createRefs()
+    val isLandscape =
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    var isBottomSheetVisible by remember { mutableStateOf(false) }
 
-        Text(
-            modifier = Modifier.constrainAs(textTitle) {
-                top.linkTo(anchor = btnSettings.top)
-                start.linkTo(anchor = parent.start)
-                bottom.linkTo(anchor = btnSettings.bottom)
-            },
-            text = "Node Screen",
-            fontFamily = FontFamily(Font(R.font.montserrat_medium)),
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            fontSize = 26.sp
-        )
-        Button(
-            modifier = Modifier
-                .constrainAs(btnSettings) {
-                    top.linkTo(anchor = parent.top)
-                    end.linkTo(anchor = parent.end)
-                }
-                .size(52.dp),
-            onClick = {},
-            contentPadding = PaddingValues(0.dp),
-            shape = RoundedCornerShape(CornerSize(28f)),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                modifier = Modifier.size(28.dp),
-                painter = painterResource(R.drawable.ic_settings),
-                contentDescription = "Settings"
+            NodeContent(
+                node = node,
+                isLandscape = isLandscape,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            val childrenCount = node.children.count()
+            NavigationButtons(
+                parent = node.parent,
+                children = node.children,
+                onNavigationClicked = onNavigationClicked,
+                onNextClicked = {
+                    if (childrenCount > 1) {
+                        isBottomSheetVisible = true
+                    } else if (childrenCount == 1) {
+                        onNavigationClicked(node.children[0])
+                    }
+                }
             )
         }
 
+        if (isBottomSheetVisible) {
+            NodeNextBottomSheet(
+                node = node,
+                onItemSelected = { onNavigationClicked(it) },
+                onDismiss = { isBottomSheetVisible = false }
+            )
+        }
+    }
+}
+
+@Composable
+fun ColumnScope.NodeContent(
+    node: Node,
+    isLandscape: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val title = if (node.parent == null) {
+        stringResource(R.string.node_type_root)
+    } else {
+        stringResource(R.string.node_type_regular)
+    }
+
+    val shape = @Composable {
         AbstractNodeShape(
-            modifier = Modifier.constrainAs(abstractShape) {
-                top.linkTo(anchor = parent.top, margin = (-140).dp)
-                bottom.linkTo(anchor = parent.bottom)
-                start.linkTo(anchor = parent.start, margin = 16.dp)
-                end.linkTo(anchor = parent.end, margin = 16.dp)
-            },
             seed = node.address,
-            size = 180.dp
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
+    }
 
-        Text(
-            modifier = Modifier.constrainAs(textNodeType) {
-                top.linkTo(anchor = abstractShape.bottom, margin = 16.dp)
-                start.linkTo(anchor = parent.start, margin = 16.dp)
-                end.linkTo(anchor = parent.end, margin = 16.dp)
-            },
-            text = if (node.parent == null) "Root Node" else "Node",
-            color = MaterialTheme.colorScheme.secondary,
-            fontSize = 26.sp
-        )
-        Text(
-            modifier = Modifier
-                .constrainAs(textNodeAddress) {
-                    top.linkTo(anchor = textNodeType.bottom)
-                    start.linkTo(anchor = textNodeType.start)
-                    end.linkTo(anchor = textNodeType.end)
-                },
-            text = node.address,
-            textAlign = TextAlign.Center,
-            color = LocalCustomColors.current.accent,
-            fontSize = 26.sp
-        )
-
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .height(58.dp)
-                .constrainAs(buttons) {
-                    bottom.linkTo(anchor = parent.bottom)
-                    start.linkTo(anchor = parent.start)
-                    end.linkTo(anchor = parent.end)
-                },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
+    val textBlock = @Composable {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
         ) {
-            if (node.parent != null) {
-                Button(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .fillMaxHeight(),
-                    shape = RoundedCornerShape(CornerSize(28f)),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                    onClick = { navigateTo(node.parent) }
-                ) {
-                    Text(
-                        text = "Back",
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        fontSize = 20.sp
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .fillMaxSize()
-                )
-            }
-            Spacer(modifier = Modifier.weight(0.1f, true))
-            if (node.children.count() > 0) {
-                Button(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .fillMaxHeight(),
-                    shape = RoundedCornerShape(CornerSize(28f)),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    onClick = {
-                        navigateTo(node.children[0])
-                    }
-                ) {
-                    Text(
-                        text = "Next",
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = 20.sp
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .fillMaxSize()
-                )
+            Text(
+                text = title,
+                style = titleSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 12.dp)
+            )
+            Text(
+                text = node.address,
+                style = titleMedium.copy(
+                    color = LocalCustomColors.current.accent,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+
+    if (isLandscape) {
+        Row(
+            modifier = modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            shape()
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                verticalArrangement = Arrangement.Center
+            ) {
+                textBlock()
             }
         }
+    } else {
+        Column(
+            modifier = modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.weight(0.8f))
+            shape()
+            Spacer(modifier = Modifier.width(16.dp))
+            textBlock()
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun NavigationButtons(
+    parent: String?,
+    children: List<String>?,
+    onNavigationClicked: (String) -> Unit,
+    onNextClicked: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (parent != null) {
+            NodeButton(
+                text = stringResource(R.string.button_back),
+                onClick = { onNavigationClicked(parent) },
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        if (children != null && children.isNotEmpty()) {
+            val text = if (children.count() == 1) {
+                stringResource(R.string.button_next)
+            } else {
+                stringResource(R.string.button_next_multiple).format(children.count())
+            }
+            NodeButton(
+                text = text,
+                onClick = { onNextClicked() },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun RowScope.NodeButton(
+    text: String,
+    onClick: () -> Unit,
+    containerColor: Color,
+    contentColor: Color
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight(),
+        shape = buttonShape,
+        colors = ButtonDefaults.buttonColors(containerColor = containerColor)
+    ) {
+        Text(
+            text = text,
+            style = buttonLarge,
+            color = contentColor
+        )
     }
 }
 
 @Preview
 @Composable
-private fun NodeScreenPreview() {
+fun NodeScreenPreviewPortrait() {
     val node = Node(
         address = "0x21c5983b5ee94b6cf7b3a041cae7d830566ac443",
-        children = listOf(""),
-        parent = ""
+        children = listOf("0x456"),
+        parent = "0xabc"
     )
-    NodeScreen(node, {})
+    NodeContent(node = node, onNavigationClicked = {})
+}
+
+@Preview(
+    showSystemUi = true,
+    device = "spec:width=411dp,height=891dp,dpi=420,isRound=false,chinSize=0dp,orientation=landscape"
+)
+@Composable
+fun NodeScreenPreviewLandscape() {
+    val node = Node(
+        address = "0x21c5983b5ee94b6cf7b3a041cae7d830566ac443",
+        children = listOf("0x456"),
+        parent = "0xabc"
+    )
+    NodeContent(node = node, onNavigationClicked = {})
 }

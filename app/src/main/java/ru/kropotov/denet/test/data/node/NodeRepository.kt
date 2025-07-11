@@ -10,5 +10,16 @@ interface NodeRepository {
 
     fun getNode(nodeAddress: String): Flow<Node?>
 
-    suspend fun saveLastNode(nodeAddress: String)
+    fun getLastNodeAddress(): Flow<String?>
+
+    suspend fun saveLastNode(nodeAddress: String?)
+
+    /**
+     * Deletes node, it's children and removes from parent's children.
+     *
+     * @return removed nodes
+     */
+    suspend fun deleteNode(nodeAddress: String): List<String>
+
+    suspend fun addChildNode(parent: String, nodeAddress: String)
 }
